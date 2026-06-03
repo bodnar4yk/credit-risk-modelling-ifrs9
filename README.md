@@ -8,8 +8,8 @@ The repository is structured logically to separate the different stages of the c
 
 ## 📁 Repository Structure
 * `1_PD_Model/` — Application/Behavioral Scorecard development using Logistic Regression on Weight of Evidence (WoE) transformed variables.
-* `2_LGD_Model/` — Recovery rate and Loss Given Default estimation.
-* `3_EAD_Model/` — *(In Progress)* Credit Conversion Factor (CCF) and Exposure at Default forecasting.
+* `2_LGD_Model/` — Two-Stage Loss Given Default (LGD) estimation combining Binary Logistic Classification (Probability of Recovery) with conditional Linear Regression profiling.
+* `3_EAD_Model/` — Credit Conversion Factor (CCF) estimation and Exposure at Default (EAD) calibration for revolving retail exposures.
 
 ---
 
@@ -70,9 +70,11 @@ The model demonstrates high discriminative power and outstanding stability betwe
 (Note: These figures show zero signs of overfitting, securing reliable risk forecasting on future applicant vintages).
 
 ## 📉 Component 2: Loss Given Default (LGD) Estimation 
+
 LGD modeling targets the conditional loss percentage incurred by the financial institution once an asset enters a default state. Due to the classical bi-modal configuration of recovery realization (frequent absolute recoveries or absolute losses), an advanced Two-Stage Modeling Architecture was engineered.
 
 ### Mathematical Framework & Inference Flow:
+
 1. **Stage 1 (Probability of Recovery):** A Logistic Regression classifier estimates the unconditional probability that any recovery actions will yield cash returns ($P(Recovery > 0)$).
 2. **Stage 2 (Conditional Recovery Severity):** A linear regression model calculates the conditional numeric intensity of recovery rates ($E(RR | Recovery > 0)$) restricted exclusively to accounts that cleared Stage 1.
 3. **Unconditional Integration:** The finalized Loss Given Default prediction is consolidated mathematically utilizing joint expectations:
@@ -85,13 +87,29 @@ $$\text{LGD} = 1.0 - \text{Expected RR}$$
 
 The model constraints predicted values strictly inside coherent economic boundaries ($LGD \in [0.0, 1.0]$) and validates accuracy utilizing RMSE (Root Mean Squared Error) to evaluate structural prediction errors against simulated historical recovery workouts.
 
+## 📐 Component 3: Exposure at Default (EAD) Estimation
+
+EAD modeling captures the total outstanding financial obligation of a borrower at the precise moment of a default event. This is critical for revolving retail portfolios (e.g., credit cards), where the balance can fluctuate actively before breach.
+
+### Mathematical Framework & Conversion Metrics:
+To accurately measure exposure volatility, the pipeline isolates and models the **Credit Conversion Factor (CCF)** using regularized Ridge Regression. The programmatic architecture executes inference following the standardized framework:
+
+$$\text{EAD} = \text{Current Drawn Balance} + (\text{CCF} \times \text{Unutilized Limit})$$
+
+Where:
+* $\text{Current Drawn Balance}$ represents the active utilized funds at the observation point.
+* $\text{Unutilized Limit}$ is the available, uncalled credit capacity ($\text{Total Limit} - \text{Current Drawn}$).
+* $\text{CCF}$ is bound analytically within coherent systemic limits ($\text{CCF} \in [0.0, 1.0]$).
+
 ### 💼 Business Application & Credit Strategy
 
-The scaled points system and LGD profiles derived from these models can be operationalized into a retail credit workflow:
+The scaled points system and risk profiles derived from these models can be directly operationalized into a retail credit workflow:
 
-* **Risk Segmentation:** Customers with scores above 640 are classified as Low Risk (eligible for auto-approval and premium pricing limits), while applicants below 550 represent High Default risk and are routed for immediate rejection or manual underwriting.
-  
-* **Expected Loss (EL) Calibration:** The PD and LGD metrics serve as direct upstream components for the comprehensive IFRS 9 Expected Loss framework ($EL = PD \times LGD \times EAD$).
+**Risk Segmentation:** Customers with scores above 640 are classified as Low Risk (eligible for auto-approval and premium pricing limits), while applicants below 550 represent High Default risk and are routed for immediate rejection or manual underwriting.
+
+**Expected Loss (EL) Calibration:** The PD, LGD, and EAD metrics serve as the direct upstream components for the integrated IFRS 9 / Basel Expected Loss framework:
+
+$$\text{EL} = \text{PD} \times \text{LGD} \times \text{EAD}$$
 
 ## 🛠️ Technological Stack & Dependencies
 
@@ -99,7 +117,7 @@ The scaled points system and LGD profiles derived from these models can be opera
 
 * **Data Processing & Analytics: Pandas, NumPy**
 
-* **Machine Learning & Modeling: Scikit-learn (Decision Trees, Logistic Regression)**
+* **Machine Learning & Modeling: Scikit-learn (Decision Trees, Logistic Regression, Linear Regression, Ridge)**
 
 * **Data Sourcing: Kaggle API**
 
@@ -118,15 +136,19 @@ To replicate the environment and run the files, install the required libraries:
 2. **Setup your Kaggle Token:**
     Place your kaggle.json file inside your core system path (~/.kaggle/ or C:\Users\<User>\.kaggle\).
 
-4. **Install dependencies:**
+3. **Install dependencies:**
     ```
     pip install -r requirements.txt
     ```
-5. **Execute the PD Model:**
+4. **Execute the PD Model:**
    ```
    python 1_PD_Model/credit_scorecard.py
    ```
-6. **Execute the LGD Model:**
+5. **Execute the LGD Model:**
    ```
    python 2_LGD_Model/lgd_model.py
+   ```
+6. **Execute the EAD Model:**
+   ```
+   python 3_EAD_Model/ead_model.py
    ```
