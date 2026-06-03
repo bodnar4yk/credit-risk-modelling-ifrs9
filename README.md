@@ -8,7 +8,7 @@ The repository is structured logically to separate the different stages of the c
 
 ## 📁 Repository Structure
 * `1_PD_Model/` — Application/Behavioral Scorecard development using Logistic Regression on Weight of Evidence (WoE) transformed variables.
-* `2_LGD_Model/` — *(In Progress)* Recovery rate and Loss Given Default estimation.
+* `2_LGD_Model/` — Recovery rate and Loss Given Default estimation.
 * `3_EAD_Model/` — *(In Progress)* Credit Conversion Factor (CCF) and Exposure at Default forecasting.
 
 ---
@@ -69,10 +69,29 @@ The model demonstrates high discriminative power and outstanding stability betwe
 * **Test AUC-ROC: ~0.85+  | Test GINI: ~0.70+**
 (Note: These figures show zero signs of overfitting, securing reliable risk forecasting on future applicant vintages).
 
+## 📉 Component 2: Loss Given Default (LGD) Estimation 
+LGD modeling targets the conditional loss percentage incurred by the financial institution once an asset enters a default state. Due to the classical bi-modal configuration of recovery realization (frequent absolute recoveries or absolute losses), an advanced Two-Stage Modeling Architecture was engineered.
+
+### Mathematical Framework & Inference Flow:
+1. **Stage 1 (Probability of Recovery):** A Logistic Regression classifier estimates the unconditional probability that any recovery actions will yield cash returns ($P(Recovery > 0)$).
+2. **Stage 2 (Conditional Recovery Severity):** A linear regression model calculates the conditional numeric intensity of recovery rates ($E(RR | Recovery > 0)$) restricted exclusively to accounts that cleared Stage 1.
+3. **Unconditional Integration:** The finalized Loss Given Default prediction is consolidated mathematically utilizing joint expectations:
+
+$$\text{Expected RR} = P(\text{Recovery} > 0) \times E(\text{RR} \mid \text{Recovery} > 0)$$
+
+$$\text{LGD} = 1.0 - \text{Expected RR}$$
+
+### Validation Architecture:
+
+The model constraints predicted values strictly inside coherent economic boundaries ($LGD \in [0.0, 1.0]$) and validates accuracy utilizing RMSE (Root Mean Squared Error) to evaluate structural prediction errors against simulated historical recovery workouts.
+
 ### 💼 Business Application & Credit Strategy
-The scaled points system derived from this model can be operationalized into a retail credit workflow:
-* **Risk Segmentation:** Customers with scores above **640** are classified as Low Risk (eligible for auto-approval and premium pricing limits), while applicants below **550** represent High Default risk and are routed for immediate rejection or manual underwriting.
-* **Expected Loss (EL) Calibration:** This PD metric serves as a direct upstream component for the comprehensive IFRS 9 Expected Loss framework ($EL = PD \times LGD \times EAD$).
+
+The scaled points system and LGD profiles derived from these models can be operationalized into a retail credit workflow:
+
+* **Risk Segmentation:** Customers with scores above 640 are classified as Low Risk (eligible for auto-approval and premium pricing limits), while applicants below 550 represent High Default risk and are routed for immediate rejection or manual underwriting.
+  
+* **Expected Loss (EL) Calibration:** The PD and LGD metrics serve as direct upstream components for the comprehensive IFRS 9 Expected Loss framework ($EL = PD \times LGD \times EAD$).
 
 ## 🛠️ Technological Stack & Dependencies
 
@@ -93,7 +112,7 @@ To replicate the environment and run the files, install the required libraries:
 
 1. **Clone the repository:**
     ```bash
-       git clone git clone https://github.com/your-username/credit-risk-modelling-ifrs9.git
+       git clone https://github.com/bodnar4yk/credit-risk-modelling-ifrs9.git
        cd credit-risk-modelling-ifrs9
     ```
 2. **Setup your Kaggle Token:**
@@ -106,4 +125,8 @@ To replicate the environment and run the files, install the required libraries:
 5. **Execute the PD Model:**
    ```
    python 1_PD_Model/credit_scorecard.py
+   ```
+6. **Execute the LGD Model:**
+   ```
+   python 2_LGD_Model/lgd_model.py
    ```
